@@ -1,100 +1,66 @@
 ﻿#include <iostream>
-#include <fstream>
 #include <vector>
-#include <set>
-#include <algorithm>
-#include <cstdlib>
-#include <ctime>
-#include <string>
-
-// https://informatics.msk.ru/mod/statements/view.php?id=256&chapterid=111540#1
+#include <queue>
+#include <utility>
+#include <cstring>
 
 using namespace std;
 
-vector<vector<int>> g;
-vector<bool> used;
-vector<set<int>> components;
+typedef pair<int, int> pii;
 
-void dfs(int v) {
-    used[v] = true;
-    components.back().insert(v);
-    for (int u : g[v]) {
-        if (!used[u]) {
-            dfs(u);
-        }
-    }
+const int MAXN = 500;
+const int dx[4] = { 1, -1, 0, 0 };
+const int dy[4] = { 0, 0, 1, -1 };
+
+int n, m;
+int grid[MAXN][MAXN];
+int dist[MAXN][MAXN];
+
+bool valid(int x, int y) {
+    return x >= 0 && x < n && y >= 0 && y < m;
 }
 
-void generate_graph(int n, int m, vector<pair<int, int>>& edges) {
-    for (int i = 0; i < m; i++) {
-        int u = rand() % n + 1;
-        int v = rand() % n + 1;
-        while (u == v) {
-            v = rand() % n + 1;
-        }
-        edges.push_back({ u, v });
-    }
-}
-
-void generate_test(int test_num) {
-    std::string filename = "tests/";
-    if (test_num < 10)
-        filename += "0";
-
-    ofstream input_file(filename + to_string(test_num));
-    ofstream output_file(filename + to_string(test_num) + ".a");
-
-    int n = rand() % 100000 + 1;
-    int m = rand() % 100000;
-
-    input_file << n << " " << m << endl;
-
-    vector<pair<int, int>> edges;
-    generate_graph(n, m, edges);
-
-    for (const auto& edge : edges) {
-        input_file << edge.first << " " << edge.second << endl;
-    }
-
-    g.resize(n + 1);
-    used.assign(n + 1, false);
-
-    for (const auto& edge : edges) {
-        g[edge.first].push_back(edge.second);
-        g[edge.second].push_back(edge.first);
-    }
-
-    for (int i = 1; i <= n; i++) {
-        if (!used[i]) {
-            components.push_back(set<int>());
-            dfs(i);
+int bfs() {
+    queue<pii> q;
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < m; j++) {
+            if (grid[i][j] == 1) {
+                q.push({ i, j });
+                dist[i][j] = 0;
+            }
+            else {
+                dist[i][j] = -1;
+            }
         }
     }
-
-    output_file << components.size() << endl;
-
-    for (const auto& component : components) {
-        output_file << component.size() << endl;
-        for (int v : component) {
-            output_file << v << " ";
+    while (!q.empty()) {
+        pii u = q.front();
+        q.pop();
+        for (int k = 0; k < 4; k++) {
+            int x = u.first + dx[k];
+            int y = u.second + dy[k];
+            if (valid(x, y) && dist[x][y] == -1) {
+                dist[x][y] = dist[u.first][u.second] + 1;
+                q.push({ x, y });
+            }
         }
-        output_file << endl;
     }
-
-    g.clear();
-    used.clear();
-    components.clear();
-
-    input_file.close();
-    output_file.close();
+    return 0;
 }
 
 int main() {
-    srand(time(0));
-
-    for (int i = 1; i <= 20; i++) {
-        generate_test(i);
+    cin >> n >> m;
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < m; j++) {
+            cin >> grid[i][j];
+        }
     }
-
+    bfs();
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < m; j++) {
+            cout << dist[i][j] << " ";
+        }
+        cout << endl;
+    }
     return 0;
 }
