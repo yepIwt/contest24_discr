@@ -1,70 +1,100 @@
 ﻿#include <iostream>
-#include <vector>
-#include <algorithm>
-#include <limits.h>
 #include <fstream>
+#include <vector>
+#include <set>
+#include <algorithm>
 #include <cstdlib>
 #include <ctime>
 #include <string>
 
-
-// https://informatics.msk.ru/mod/statements/view.php?id=259&chapterid=177#1
-
+// https://informatics.msk.ru/mod/statements/view.php?id=256&chapterid=111540#1
 
 using namespace std;
 
+vector<vector<int>> g;
+vector<bool> used;
+vector<set<int>> components;
 
-void findMinSumTriangle(int n, vector<vector<int>>& dist, int test_counter) {
-    int min_sum = INT_MAX;
-    int a = -1, b = -1, c = -1;
-    for (int i = 0; i < n; i++) {
-        for (int j = i + 1; j < n; j++) {
-            for (int k = j + 1; k < n; k++) {
-                int sum = dist[i][j] + dist[j][k] + dist[k][i];
-                if (sum < min_sum) {
-                    min_sum = sum;
-                    a = i + 1;
-                    b = j + 1;
-                    c = k + 1;
-                }
-            }
+void dfs(int v) {
+    used[v] = true;
+    components.back().insert(v);
+    for (int u : g[v]) {
+        if (!used[u]) {
+            dfs(u);
         }
     }
-    std::ofstream outputFile("tests/0" + std::to_string(test_counter) + ".a", std::ios_base::app);
-    outputFile << a << " " << b << " " << c << std::endl;
-    outputFile.close();
 }
 
-void logInput(int n, vector<vector<int>>& dist, int test_counter) {
-    std::ofstream inputFile("tests/0" + std::to_string(test_counter), std::ios_base::app);
-    inputFile << n << std::endl;
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-            inputFile << dist[i][j] << " ";
+void generate_graph(int n, int m, vector<pair<int, int>>& edges) {
+    for (int i = 0; i < m; i++) {
+        int u = rand() % n + 1;
+        int v = rand() % n + 1;
+        while (u == v) {
+            v = rand() % n + 1;
         }
-        inputFile << std::endl;
+        edges.push_back({ u, v });
     }
-    inputFile.close();
+}
+
+void generate_test(int test_num) {
+    std::string filename = "tests/";
+    if (test_num < 10)
+        filename += "0";
+
+    ofstream input_file(filename + to_string(test_num));
+    ofstream output_file(filename + to_string(test_num) + ".a");
+
+    int n = rand() % 100000 + 1;
+    int m = rand() % 100000;
+
+    input_file << n << " " << m << endl;
+
+    vector<pair<int, int>> edges;
+    generate_graph(n, m, edges);
+
+    for (const auto& edge : edges) {
+        input_file << edge.first << " " << edge.second << endl;
+    }
+
+    g.resize(n + 1);
+    used.assign(n + 1, false);
+
+    for (const auto& edge : edges) {
+        g[edge.first].push_back(edge.second);
+        g[edge.second].push_back(edge.first);
+    }
+
+    for (int i = 1; i <= n; i++) {
+        if (!used[i]) {
+            components.push_back(set<int>());
+            dfs(i);
+        }
+    }
+
+    output_file << components.size() << endl;
+
+    for (const auto& component : components) {
+        output_file << component.size() << endl;
+        for (int v : component) {
+            output_file << v << " ";
+        }
+        output_file << endl;
+    }
+
+    g.clear();
+    used.clear();
+    components.clear();
+
+    input_file.close();
+    output_file.close();
 }
 
 int main() {
     srand(time(0));
-    int test_counter = 1;
-    for (int i = 0; i < 7; i++) {
-        int n = rand() % 100 + 1;
-        vector<vector<int>> dist(n, vector<int>(n));
-        for (int j = 0; j < n; j++) {
-            for (int k = 0; k < n; k++) {
-                dist[j][k] = rand() % 1000 + 1;
-                dist[k][j] = dist[j][k];
-                if (j == k) {
-                    dist[j][k] = 0;
-                }
-            }
-        }
-        logInput(n, dist, test_counter);
-        findMinSumTriangle(n, dist, test_counter);
-        test_counter++;
+
+    for (int i = 1; i <= 20; i++) {
+        generate_test(i);
     }
+
     return 0;
 }
