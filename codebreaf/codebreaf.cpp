@@ -1,66 +1,56 @@
 ﻿#include <iostream>
-#include <string>
+#include <algorithm>
 #include <vector>
-#include <cstdlib> 
-#include <ctime> 
 #include <fstream>
+#include <string>
 
-// https://informatics.msk.ru/mod/statements/view.php?id=211&chapterid=82#1
+// https://informatics.msk.ru/mod/statements/view.php?id=211&chapterid=85#1
 
 
-void generate_strings(int n, int k, std::string current_string, std::vector<std::string>& result) {
-    if (current_string.length() == n) {
-        result.push_back(current_string);
-        return;
-    }
-
-    for (int i = 0; i < k; i++) {
-        generate_strings(n, k, current_string + std::to_string(i), result);
-    }
-}
-
-std::pair<int, int> generate_n_k() {
+int generate_n() {
     std::srand((unsigned)std::time(0));
-    int i, j;
-    while (true) {
-        i = (rand() % 10) + 1;
-        j = (rand() % 10) + 1;
-        if ((i + j) < 15) {
-            return std::make_pair(i, j);
-        }
-    }
+    return (rand() % 10) + 1;
 }
 
 
 int main() {
 
-    int n, k;
+    int n;
 
-    for (int i = 1; i <= 17; i++) {
+    for (int i = 0; i < 10; i++) {
 
-        std::pair<int, int> new_input = generate_n_k();
-
-        n = new_input.first;
-        k = new_input.second;
-
-        std::string filename = "tests\\";
-        if (i < 10) filename += "0";
+        n = i;
+        int test_case = i + 1;
 
         std::ofstream input_file;
-        std::string input_path = filename + std::to_string(i);
+        std::string filename = "tests\\";
+        if (test_case < 10) filename += "0";
+        std::string input_path = filename + std::to_string(test_case);
         input_file.open(input_path.c_str());
-        input_file << n << " " << k;
+        input_file << n;
         input_file.close();
+
 
         std::ofstream output_file;
         std::string output_path = input_path + ".a";
         output_file.open(output_path.c_str());
 
-        std::vector<std::string> result;
-        generate_strings(n, k, "", result);
 
-        for (const auto& str : result) {
-            output_file << str << std::endl;
+        std::vector<int> numbers(n);
+        for (int i = 0; i < n; ++i) {
+            numbers[i] = i + 1;
+        }
+
+        for (int num : numbers) {
+            output_file << num;
+        }
+        output_file << std::endl;
+
+        while (std::next_permutation(numbers.begin(), numbers.end())) {
+            for (int num : numbers) {
+                output_file << num;
+            }
+            output_file << std::endl;
         }
         output_file.close();
     }
