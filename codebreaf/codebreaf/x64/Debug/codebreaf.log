@@ -1,3 +1,2 @@
 ﻿  codebreaf.cpp
-C:\Users\ReetR\source\repos\yepIwt\contest24_discr\codebreaf\codebreaf.cpp(93,15): warning C4244: аргумент: преобразование "time_t" в "unsigned int", возможна потеря данных
   codebreaf.vcxproj -> C:\Users\ReetR\source\repos\yepIwt\contest24_discr\codebreaf\x64\Debug\codebreaf.exe

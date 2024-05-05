@@ -1,65 +1,85 @@
 #include <iostream>
-#include <vector>
 #include <queue>
-#include <utility>
-#include <cstring>
+#include <unordered_set>
+#include <string>
 
 using namespace std;
 
-typedef pair<int, int> pii;
+// https://informatics.msk.ru/mod/statements/view.php?id=255&chapterid=2001#1
 
-const int MAXN = 500;
-const int dx[4] = {1, -1, 0, 0};
-const int dy[4] = {0, 0, 1, -1};
-
-int n, m;
-int grid[MAXN][MAXN];
-int dist[MAXN][MAXN];
-
-bool valid(int x, int y) {
-    return x >= 0 && x < n && y >= 0 && y < m;
+// Функция для проверки, является ли число четырехзначным и не содержит ли оно нулей
+bool isValid(int num) {
+    string str = to_string(num);
+    return str.size() == 4 && str.find('0') == string::npos;
 }
 
-int bfs() {
-    queue<pii> q;
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < m; j++) {
-            if (grid[i][j] == 1) {
-                q.push({i, j});
-                dist[i][j] = 0;
-            } else {
-                dist[i][j] = -1;
-            }
-        }
+// Функция для генерации всех возможных следующих чисел из текущего числа
+vector<int> generateNext(int num) {
+    vector<int> nextNumbers;
+    string str = to_string(num);
+
+    // Правило 1: увеличить первую цифру на 1
+    if (str[0] != '9') {
+        string nextStr = str;
+        nextStr[0]++;
+        nextNumbers.push_back(stoi(nextStr));
     }
+
+    // Правило 2: уменьшить последнюю цифру на 1
+    if (str[3] != '1') {
+        string nextStr = str;
+        nextStr[3]--;
+        nextNumbers.push_back(stoi(nextStr));
+    }
+
+    // Правило 3: циклический сдвиг вправо
+    string nextStr = str.substr(3, 1) + str.substr(0, 3);
+    nextNumbers.push_back(stoi(nextStr));
+
+    // Правило 4: циклический сдвиг влево
+    nextStr = str.substr(1, 3) + str.substr(0, 1);
+    nextNumbers.push_back(stoi(nextStr));
+
+    return nextNumbers;
+}
+
+// Функция для поиска кратчайшего пути между двумя числами
+vector<int> shortestPath(int start, int end) {
+    unordered_set<int> visited;
+    queue<vector<int>> q;
+    q.push({ start });
+
     while (!q.empty()) {
-        pii u = q.front();
+        vector<int> path = q.front();
         q.pop();
-        for (int k = 0; k < 4; k++) {
-            int x = u.first + dx[k];
-            int y = u.second + dy[k];
-            if (valid(x, y) && dist[x][y] == -1) {
-                dist[x][y] = dist[u.first][u.second] + 1;
-                q.push({x, y});
+        int current = path.back();
+
+        if (current == end) {
+            return path;
+        }
+
+        if (visited.find(current) == visited.end()) {
+            visited.insert(current);
+            vector<int> nextNumbers = generateNext(current);
+            for (int num : nextNumbers) {
+                vector<int> newPath = path;
+                newPath.push_back(num);
+                q.push(newPath);
             }
         }
     }
-    return 0;
+
+    return {}; // Если путь не найден
 }
 
 int main() {
-    cin >> n >> m;
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < m; j++) {
-            cin >> grid[i][j];
-        }
+    int start, end;
+    cin >> start >> end;
+
+    vector<int> path = shortestPath(start, end);
+    for (int num : path) {
+        cout << num << endl;
     }
-    bfs();
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < m; j++) {
-            cout << dist[i][j] << " ";
-        }
-        cout << endl;
-    }
+
     return 0;
 }
