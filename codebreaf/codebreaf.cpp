@@ -1,91 +1,114 @@
 ﻿#include <iostream>
-#include <vector>
 #include <fstream>
+#include <vector>
+#include <cstdlib>
+#include <ctime>
 #include <string>
+#include <queue>
 
 using namespace std;
 
-// https://informatics.msk.ru/mod/statements/view.php?id=261#1
+// https://informatics.msk.ru/mod/statements/view.php?id=262&chapterid=2783#1
 
-int random(int min, int max) {
-    return min + rand() % (max - min + 1);
-}
+const int INF = 1e9;
 
+int n, m;
+vector<vector<int>> capacity;
+vector<vector<int>> residual_capacity;
+vector<int> parent;
 
-void dfs(int node, const vector<vector<int>>& adj_matrix, vector<bool>& visited) {
-    visited[node] = true;
-    for (int i = 0; i < adj_matrix.size(); ++i) {
-        if (adj_matrix[node][i] && !visited[i]) {
-            dfs(i, adj_matrix, visited);
+bool bfs(int source, int sink) {
+    vector<bool> visited(n + 1, false);
+    queue<int> q;
+    q.push(source);
+    visited[source] = true;
+    parent.assign(n + 1, -1);
+
+    while (!q.empty()) {
+        int u = q.front();
+        q.pop();
+
+        for (int v = 1; v <= n; ++v) {
+            if (!visited[v] && residual_capacity[u][v] > 0) {
+                q.push(v);
+                parent[v] = u;
+                visited[v] = true;
+            }
         }
     }
+    return visited[sink];
 }
 
-bool isTree(const vector<vector<int>>& adj_matrix) {
-    int n = adj_matrix.size();
+int fordFulkerson(int source, int sink) {
+    residual_capacity = capacity;
 
-    // Проверяем, что количество ребер равно n-1
-    int edge_count = 0;
-    for (int i = 0; i < n; ++i) {
-        for (int j = i + 1; j < n; ++j) {
-            edge_count += adj_matrix[i][j];
+    int maxFlow = 0;
+
+    while (bfs(source, sink)) {
+        int pathFlow = INF;
+        for (int v = sink; v != source; v = parent[v]) {
+            int u = parent[v];
+            pathFlow = min(pathFlow, residual_capacity[u][v]);
         }
-    }
-    if (edge_count != n - 1) {
-        return false;
-    }
 
-    // Проверяем, что граф связный
-    vector<bool> visited(n, false);
-    dfs(0, adj_matrix, visited);
-    for (bool v : visited) {
-        if (!v) {
-            return false;
+        for (int v = sink; v != source; v = parent[v]) {
+            int u = parent[v];
+            residual_capacity[u][v] -= pathFlow;
+            residual_capacity[v][u] += pathFlow;
         }
+
+        maxFlow += pathFlow;
     }
 
-    return true;
+    return maxFlow;
 }
 
+void generateTest(string filename) {
+    ofstream file(filename);
 
+    // Генерация случайного числа вершин и рёбер
+    n = 2 + rand() % 9;
+    m = 1 + rand() % (n * (n - 1));
+
+    file << n << " " << m << endl;
+
+    capacity.assign(n + 1, vector<int>(n + 1, 0));
+
+    // Генерация случайных рёбер с пропускными способностями
+    for (int i = 0; i < m; ++i) {
+        int a = 1 + rand() % n;
+        int b = 1 + rand() % n;
+        while (a == b) {
+            b = 1 + rand() % n;
+        }
+        int c = 1 + rand() % 100;
+        capacity[a][b] = c;
+        file << a << " " << b << " " << c << endl;
+    }
+
+    file.close();
+
+    // Вычисление максимального потока с помощью предложенного решения
+    int maxFlow = fordFulkerson(1, n);
+
+    // Запись результата в файл
+    ofstream outputFile(filename + ".a");
+    outputFile << maxFlow << endl;
+    outputFile.close();
+
+}
 
 int main() {
-    for (int testNum = 1; testNum <= 11; testNum++){
-        srand(time(0));
+    // Инициализация генератора случайных чисел
+    srand(time(0));
 
-        std::string filename = "tests\\";
-        if (testNum < 10) filename += "0";
-        string input_filename = filename + std::to_string(testNum);
-        string output_filename = input_filename + ".a";
-        ofstream input_file(input_filename);
-        ofstream output_file(output_filename);
+    // Генерация 11 тестов
+    for (int i = 1; i <= 23; ++i) {
 
-        int n = random(1, 100);
-        
-        input_file << n << endl;
-
-        vector<vector<int>> adj_matrix(n, vector<int>(n));
-        for (int i = 0; i < n; ++i) {
-            for (int j = 0; j < n; ++j) {
-                int edge = random(0, 1);
-                adj_matrix[i][j] = edge;
-                adj_matrix[j][i] = edge;
-            }
-        }
-
-        for (int i = 0; i < n; ++i) {
-            for (int j = 0; j < n; ++j) {
-                input_file << adj_matrix[i][j] << " ";
-            }
-            input_file << endl;
-        }
-
-        if (isTree(adj_matrix)) {
-            output_file << "YES" << endl;
-        }
-        else {
-            output_file << "NO" << endl;
-        }
+        string filename = "tests\\";
+        if (i < 10) filename += "0"; 
+        filename += to_string(i);
+        generateTest(filename);
     }
 
     return 0;
