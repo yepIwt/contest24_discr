@@ -1,119 +1,103 @@
 ﻿#include <iostream>
-#include <queue>
-#include <unordered_set>
-#include <string>
-#include <random>
 #include <fstream>
+#include <vector>
+#include <random>
+#include <string>
 
 using namespace std;
 
-// https://informatics.msk.ru/mod/statements/view.php?id=255&chapterid=2001#1
+// https://informatics.msk.ru/mod/statements/view.php?id=193#1
 
+const int INF = numeric_limits<int>::max();
 
+void generateTest(int testNumber, int N, int minWeight, int maxWeight) {
+    std::string filename = "tests\\";
+    if (testNumber < 10) filename += "0";
 
-// Функция для проверки, является ли число четырехзначным и не содержит ли оно нулей
-bool isValid(int num) {
-    string str = to_string(num);
-    return str.size() == 4 && str.find('0') == string::npos;
-}
+    ofstream inputFile(filename + to_string(testNumber));
+    ofstream outputFile(filename + to_string(testNumber) + ".a");
 
-// Функция для генерации всех возможных следующих чисел из текущего числа
-vector<int> generateNext(int num) {
-    vector<int> nextNumbers;
-    string str = to_string(num);
+    // Generate S and F
+    int S = rand() % N + 1;
+    int F;
+    do {
+        F = rand() % N + 1;
+    } while (F == S);
 
-    // Правило 1: увеличить первую цифру на 1
-    if (str[0] != '9') {
-        string nextStr = str;
-        nextStr[0]++;
-        nextNumbers.push_back(stoi(nextStr));
-    }
+    // Write N, S, and F to input file
+    inputFile << N << " " << S << " " << F << endl;
 
-    // Правило 2: уменьшить последнюю цифру на 1
-    if (str[3] != '1') {
-        string nextStr = str;
-        nextStr[3]--;
-        nextNumbers.push_back(stoi(nextStr));
-    }
-
-    // Правило 3: циклический сдвиг вправо
-    string nextStr = str.substr(3, 1) + str.substr(0, 3);
-    nextNumbers.push_back(stoi(nextStr));
-
-    // Правило 4: циклический сдвиг влево
-    nextStr = str.substr(1, 3) + str.substr(0, 1);
-    nextNumbers.push_back(stoi(nextStr));
-
-    return nextNumbers;
-}
-
-// Функция для поиска кратчайшего пути между двумя числами
-vector<int> shortestPath(int start, int end) {
-    unordered_set<int> visited;
-    queue<vector<int>> q;
-    q.push({ start });
-
-    while (!q.empty()) {
-        vector<int> path = q.front();
-        q.pop();
-        int current = path.back();
-
-        if (current == end) {
-            return path;
-        }
-
-        if (visited.find(current) == visited.end()) {
-            visited.insert(current);
-            vector<int> nextNumbers = generateNext(current);
-            for (int num : nextNumbers) {
-                vector<int> newPath = path;
-                newPath.push_back(num);
-                q.push(newPath);
+    // Generate graph
+    vector<vector<int>> graph(N, vector<int>(N));
+    for (int i = 0; i < N; ++i) {
+        for (int j = 0; j < N; ++j) {
+            if (i != j) {
+                if (rand() % 2 == 0) {
+                    graph[i][j] = rand() % (maxWeight - minWeight + 1) + minWeight;
+                }
+                else {
+                    graph[i][j] = -1; // No edge
+                }
+            }
+            else {
+                graph[i][j] = 0; // Zero weight for self loop
             }
         }
     }
 
-    return {}; // Если путь не найден
+    // Write graph to input file
+    for (int i = 0; i < N; ++i) {
+        for (int j = 0; j < N; ++j) {
+            inputFile << graph[i][j] << " ";
+        }
+        inputFile << endl;
+    }
+
+    // Calculate shortest distance using Dijkstra's algorithm
+    vector<int> distance(N, INF);
+    vector<bool> visited(N, false);
+
+    distance[S - 1] = 0;
+
+    for (int i = 0; i < N; ++i) {
+        int minDistance = INF, minIndex = -1;
+
+        for (int j = 0; j < N; ++j) {
+            if (!visited[j] && distance[j] < minDistance) {
+                minDistance = distance[j];
+                minIndex = j;
+            }
+        }
+
+        if (minIndex == -1) break;
+
+        visited[minIndex] = true;
+
+        for (int j = 0; j < N; ++j) {
+            if (graph[minIndex][j] != -1 && distance[minIndex] + graph[minIndex][j] < distance[j]) {
+                distance[j] = distance[minIndex] + graph[minIndex][j];
+            }
+        }
+    }
+
+    // Write shortest distance to output file
+    outputFile << (distance[F - 1] == INF ? -1 : distance[F - 1]) << endl;
+
+    // Close files
+    inputFile.close();
+    outputFile.close();
 }
 
 int main() {
-   
-    for (int testNum = 1; testNum <= 16; testNum++) {
+    srand(time(nullptr)); // Initialize random seed
 
-        random_device rd;
-        mt19937 gen(rd());
-        uniform_int_distribution<int> dis(1000, 9999);
-        
-        int start = dis(gen);
-        int end = dis(gen);
-        
-        while (!isValid(start)) {
-            start = dis(gen);
-        }
-        
-        while (!isValid(end)) {
-            end = dis(gen);
-        }
+    int numTests = 12;
+    int N = 5; // Number of vertices in graph
+    int minWeight = 1; // Minimum weight of an edge
+    int maxWeight = 10; // Maximum weight of an edge
 
-        
-        std::string filename = "tests\\";
-        if (testNum < 10) filename += "0";
-        
-        std::string inputFileName = filename + to_string(testNum);
-        std::ofstream inputFile(inputFileName);
-        inputFile << start << endl << end;
-        inputFile.close();
-
-
-        std::string outputFileName = inputFileName + ".a";
-        std::ofstream outputFile(outputFileName);
-        
-
-        vector<int> path = shortestPath(start, end);
-        for (int num : path) {
-            outputFile << num << endl;
-        }
-        inputFile.close();
+    for (int i = 1; i <= numTests; ++i) {
+        generateTest(i, N, minWeight, maxWeight);
     }
 
     return 0;
