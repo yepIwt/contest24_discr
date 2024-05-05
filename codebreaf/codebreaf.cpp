@@ -1,103 +1,96 @@
 ﻿#include <iostream>
-#include <fstream>
 #include <vector>
-#include <random>
+#include <queue>
+#include <limits>
 #include <string>
+#include <fstream>
+#include <random>
 
 using namespace std;
 
-// https://informatics.msk.ru/mod/statements/view.php?id=193#1
+// https://informatics.msk.ru/mod/statements/view.php?id=218#1
 
-const int INF = numeric_limits<int>::max();
 
-void generateTest(int testNumber, int N, int minWeight, int maxWeight) {
-    std::string filename = "tests\\";
-    if (testNumber < 10) filename += "0";
+const int MAX_WEIGHT = 1000000;
+const int MAX_N = 50;
 
-    ofstream inputFile(filename + to_string(testNumber));
-    ofstream outputFile(filename + to_string(testNumber) + ".a");
+// Генерация случайного числа в диапазоне [min, max]
+int random(int min, int max) {
+    static mt19937 mt(time(nullptr));
+    uniform_int_distribution<int> dist(min, max);
+    return dist(mt);
+}
 
-    // Generate S and F
-    int S = rand() % N + 1;
-    int F;
-    do {
-        F = rand() % N + 1;
-    } while (F == S);
+const int INF = numeric_limits<int>::max(); // Используем константу для представления бесконечности
 
-    // Write N, S, and F to input file
-    inputFile << N << " " << S << " " << F << endl;
+int dijkstra(const vector<vector<int>>& graph, int source, int target) {
+    int n = graph.size();
+    vector<int> dist(n, INF); // Инициализируем расстояния до всех вершин бесконечностью
+    dist[source] = 0; // Расстояние от исходной вершины до самой себя равно 0
+    priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pq; // Очередь с приоритетом
 
-    // Generate graph
-    vector<vector<int>> graph(N, vector<int>(N));
-    for (int i = 0; i < N; ++i) {
-        for (int j = 0; j < N; ++j) {
-            if (i != j) {
-                if (rand() % 2 == 0) {
-                    graph[i][j] = rand() % (maxWeight - minWeight + 1) + minWeight;
+    pq.push({ 0, source }); // Добавляем исходную вершину в очередь
+
+    while (!pq.empty()) {
+        int u = pq.top().second; // Получаем вершину с наименьшим расстоянием из очереди
+        pq.pop();
+
+        // Проверяем все смежные вершины
+        for (int v = 0; v < n; ++v) {
+            // Если есть ребро между вершинами u и v
+            if (graph[u][v] != -1) {
+                // Пытаемся улучшить расстояние до вершины v, используя вершину u
+                if (dist[u] + graph[u][v] < dist[v]) {
+                    dist[v] = dist[u] + graph[u][v];
+                    pq.push({ dist[v], v });
                 }
-                else {
-                    graph[i][j] = -1; // No edge
-                }
-            }
-            else {
-                graph[i][j] = 0; // Zero weight for self loop
             }
         }
     }
 
-    // Write graph to input file
-    for (int i = 0; i < N; ++i) {
-        for (int j = 0; j < N; ++j) {
-            inputFile << graph[i][j] << " ";
-        }
-        inputFile << endl;
-    }
-
-    // Calculate shortest distance using Dijkstra's algorithm
-    vector<int> distance(N, INF);
-    vector<bool> visited(N, false);
-
-    distance[S - 1] = 0;
-
-    for (int i = 0; i < N; ++i) {
-        int minDistance = INF, minIndex = -1;
-
-        for (int j = 0; j < N; ++j) {
-            if (!visited[j] && distance[j] < minDistance) {
-                minDistance = distance[j];
-                minIndex = j;
-            }
-        }
-
-        if (minIndex == -1) break;
-
-        visited[minIndex] = true;
-
-        for (int j = 0; j < N; ++j) {
-            if (graph[minIndex][j] != -1 && distance[minIndex] + graph[minIndex][j] < distance[j]) {
-                distance[j] = distance[minIndex] + graph[minIndex][j];
-            }
-        }
-    }
-
-    // Write shortest distance to output file
-    outputFile << (distance[F - 1] == INF ? -1 : distance[F - 1]) << endl;
-
-    // Close files
-    inputFile.close();
-    outputFile.close();
+    return (dist[target] == INF) ? -1 : dist[target]; // Возвращаем минимальное расстояние до целевой вершины
 }
 
 int main() {
-    srand(time(nullptr)); // Initialize random seed
+    int N, s, t;
+    for (int testNum = 1; testNum <= 12; testNum++) {
+        std::string filename = "tests\\";
+        if (testNum < 10) filename += "0";
+        string inputFilename = filename + to_string(testNum);
+        string outputFilename = inputFilename + ".a";
+        
+        ofstream inputFile(inputFilename);
+        ofstream outputFile(outputFilename);
 
-    int numTests = 12;
-    int N = 5; // Number of vertices in graph
-    int minWeight = 1; // Minimum weight of an edge
-    int maxWeight = 10; // Maximum weight of an edge
+        int N = random(2, MAX_N); // Генерация случайного количества вершин
+        int s = random(1, N); // Генерация случайной начальной вершины
+        int t = random(1, N); // Генерация случайной конечной вершины
+        while (s == t) { // Гарантируем различие начальной и конечной вершин
+            t = random(1, N);
+        }
 
-    for (int i = 1; i <= numTests; ++i) {
-        generateTest(i, N, minWeight, maxWeight);
+        inputFile << N << " " << s << " " << t << endl;;
+
+        vector<vector<int>> graph(N, vector<int>(N));
+        for (int i = 0; i < N; ++i) {
+            for (int j = 0; j < N; ++j) {
+                if (i == j) {
+                    inputFile << "0 ";
+                    graph[i][j] = 0;
+                }
+                else
+                {
+                    int weight = random(-1, MAX_WEIGHT);
+                    inputFile << weight << " ";
+                    graph[i][j] = weight;
+
+                };
+            }
+            inputFile << endl;
+        }
+
+        int shortest_path_length = dijkstra(graph, s - 1, t - 1);
+        outputFile << shortest_path_length << endl;
     }
 
     return 0;
