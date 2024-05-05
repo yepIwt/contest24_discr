@@ -1,114 +1,96 @@
 ﻿#include <iostream>
 #include <fstream>
 #include <vector>
+#include <limits>
 #include <cstdlib>
 #include <ctime>
 #include <string>
-#include <queue>
 
 using namespace std;
 
-// https://informatics.msk.ru/mod/statements/view.php?id=262&chapterid=2783#1
+// https://informatics.msk.ru/mod/statements/view.php?id=6555#1
 
-const int INF = 1e9;
+const int INF = numeric_limits<int>::max();
 
-int n, m;
-vector<vector<int>> capacity;
-vector<vector<int>> residual_capacity;
-vector<int> parent;
+// Функция для решения задачи методом венгерского
+int hungarian(const vector<vector<int>>& cost) {
+    int n = cost.size();
+    int m = cost[0].size();
 
-bool bfs(int source, int sink) {
-    vector<bool> visited(n + 1, false);
-    queue<int> q;
-    q.push(source);
-    visited[source] = true;
-    parent.assign(n + 1, -1);
-
-    while (!q.empty()) {
-        int u = q.front();
-        q.pop();
-
-        for (int v = 1; v <= n; ++v) {
-            if (!visited[v] && residual_capacity[u][v] > 0) {
-                q.push(v);
-                parent[v] = u;
-                visited[v] = true;
-            }
-        }
+    vector<int> u(n + 1), v(m + 1), p(m + 1), way(m + 1);
+    for (int i = 1; i <= n; ++i) {
+        p[0] = i;
+        int j0 = 0;
+        vector<int> minv(m + 1, INF);
+        vector<bool> used(m + 1, false);
+        do {
+            used[j0] = true;
+            int i0 = p[j0], delta = INF, j1;
+            for (int j = 1; j <= m; ++j)
+                if (!used[j]) {
+                    int cur = cost[i0 - 1][j - 1] - u[i0] - v[j];
+                    if (cur < minv[j])
+                        minv[j] = cur, way[j] = j0;
+                    if (minv[j] < delta)
+                        delta = minv[j], j1 = j;
+                }
+            for (int j = 0; j <= m; ++j)
+                if (used[j])
+                    u[p[j]] += delta, v[j] -= delta;
+                else
+                    minv[j] -= delta;
+            j0 = j1;
+        } while (p[j0] != 0);
+        do {
+            int j1 = way[j0];
+            p[j0] = p[j1];
+            j0 = j1;
+        } while (j0);
     }
-    return visited[sink];
+    return -v[0]; // минимальная стоимость назначений
 }
 
-int fordFulkerson(int source, int sink) {
-    residual_capacity = capacity;
+// Функция для генерации входных данных и записи ответов в файл
+void generateAndSolve(int test_num) {
+    std::string filename = "tests\\";
+    if (test_num < 10) filename += "0";
+    ofstream inFile(filename + to_string(test_num));
+    int K = 3 + rand() % 8; // случайное количество участников и задач от 3 до 10
+    inFile << K << std::endl;
 
-    int maxFlow = 0;
+    vector<vector<int>> times(K, vector<int>(K));
 
-    while (bfs(source, sink)) {
-        int pathFlow = INF;
-        for (int v = sink; v != source; v = parent[v]) {
-            int u = parent[v];
-            pathFlow = min(pathFlow, residual_capacity[u][v]);
+    // Генерация случайных времен решения задач
+    for (int i = 0; i < K; ++i) {
+        for (int j = 0; j < K; ++j) {
+            int somevalue = rand() % 20001;
+            times[i][j] = somevalue; // случайное число от 0 до 20000
+            inFile << somevalue << " ";
         }
-
-        for (int v = sink; v != source; v = parent[v]) {
-            int u = parent[v];
-            residual_capacity[u][v] -= pathFlow;
-            residual_capacity[v][u] += pathFlow;
-        }
-
-        maxFlow += pathFlow;
+        inFile << std::endl;
     }
 
-    return maxFlow;
-}
+    // Решение задачи методом венгерского
+    int min_time = hungarian(times);
 
-void generateTest(string filename) {
-    ofstream file(filename);
-
-    // Генерация случайного числа вершин и рёбер
-    n = 2 + rand() % 9;
-    m = 1 + rand() % (n * (n - 1));
-
-    file << n << " " << m << endl;
-
-    capacity.assign(n + 1, vector<int>(n + 1, 0));
-
-    // Генерация случайных рёбер с пропускными способностями
-    for (int i = 0; i < m; ++i) {
-        int a = 1 + rand() % n;
-        int b = 1 + rand() % n;
-        while (a == b) {
-            b = 1 + rand() % n;
-        }
-        int c = 1 + rand() % 100;
-        capacity[a][b] = c;
-        file << a << " " << b << " " << c << endl;
+    // Запись ответа в файл
+    ofstream outFile(filename + to_string(test_num) + ".a");
+    if (outFile.is_open()) {
+        outFile << min_time << endl;
+        outFile.close();
     }
-
-    file.close();
-
-    // Вычисление максимального потока с помощью предложенного решения
-    int maxFlow = fordFulkerson(1, n);
-
-    // Запись результата в файл
-    ofstream outputFile(filename + ".a");
-    outputFile << maxFlow << endl;
-    outputFile.close();
-
+    else {
+        cout << "Unable to open file for writing." << endl;
+    }
 }
 
 int main() {
     // Инициализация генератора случайных чисел
     srand(time(0));
 
-    // Генерация 11 тестов
-    for (int i = 1; i <= 23; ++i) {
-
-        string filename = "tests\\";
-        if (i < 10) filename += "0"; 
-        filename += to_string(i);
-        generateTest(filename);
+    // Генерация и решение 10 тестов
+    for (int i = 1; i <= 10; ++i) {
+        generateAndSolve(i);
     }
 
     return 0;

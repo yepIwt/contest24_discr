@@ -1,3 +1,4 @@
 ﻿  codebreaf.cpp
-C:\Users\ReetR\source\repos\yepIwt\contest24_discr\codebreaf\codebreaf.cpp(7,17): warning C4244: инициализация: преобразование "double" в "int", возможна потеря данных
+C:\Users\ReetR\source\repos\yepIwt\contest24_discr\codebreaf\codebreaf.cpp(10,11): warning C4267: инициализация: преобразование из "size_t" в "int"; возможна потеря данных
+C:\Users\ReetR\source\repos\yepIwt\contest24_discr\codebreaf\codebreaf.cpp(11,11): warning C4267: инициализация: преобразование из "size_t" в "int"; возможна потеря данных
   codebreaf.vcxproj -> C:\Users\ReetR\source\repos\yepIwt\contest24_discr\codebreaf\x64\Debug\codebreaf.exe
